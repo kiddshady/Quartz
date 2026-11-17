@@ -34,7 +34,7 @@ try { electronApp = require('electron').app; } catch { /* fuera de Electron */ }
    tiene por qué existir cuando este archivo se abre desde un test. */
 let autoUpdater = null;
 
-const RELEASES = 'https://github.com/kiddshady/Vitra/releases';
+const RELEASES = 'https://github.com/kiddshady/Quartz/releases';
 
 /* ── La decisión, aparte de todo lo demás ───────────────────────────────────
    Función pura: entra en qué condiciones corre la app, sale si se puede

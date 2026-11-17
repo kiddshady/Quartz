@@ -24,10 +24,10 @@
     "koffi": "3.2.1"
   },
   "copyright": "Copyright © 2026 Kidd Shady · Umbrovex Systems",
-  "homepage": "https://github.com/kiddshady/Vitra",
+  "homepage": "https://github.com/kiddshady/Quartz",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kiddshady/Vitra.git"
+    "url": "https://github.com/kiddshady/Quartz.git"
   },
   "build": {
     "appId": "com.umbrovex.vitra",
@@ -39,7 +39,7 @@
     "publish": {
       "provider": "github",
       "owner": "kiddshady",
-      "repo": "Vitra",
+      "repo": "Quartz",
       "releaseType": "release"
     },
     "files": [
