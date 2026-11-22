@@ -1,7 +1,7 @@
 {
   "name": "quartz",
   "productName": "Quartz",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A journal: Markdown notes linked with [[ ]], with backlinks and a graph, in quartz and amber over Opal.",
   "main": "main.cjs",
   "author": "Kidd Shady · Umbrovex Systems <umbrovex@proton.me>",
