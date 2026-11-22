@@ -20,7 +20,15 @@ function alCambiar(s) {
   if (!s) return;
   if (s.fase === 'listo' && avisada !== s.version) {
     avisada = s.version;
-    Toast.show({ title: `Quartz ${s.version || ''} is ready`.replace('  ', ' '), text: 'It downloaded on its own and installs when you quit Quartz from the tray or shut down the PC. To get it now, restart from “More”.', icon: 'check' });
+    // Con el botón a mano (pedido de Fran, 0.8.0): dura más que un aviso común
+    // (y el hover la pausa), para que dé tiempo a decidir.
+    Toast.show({
+      title: `Quartz ${s.version || ''} is ready`.replace('  ', ' '),
+      text: 'It downloaded on its own and installs when you quit Quartz from the tray or shut down the PC.',
+      icon: 'check',
+      duration: 15000,
+      action: { label: 'Restart now', onSelect: () => api.instalar() },
+    });
   } else if (s.manual && s.fase === 'al-dia' && antes?.fase === 'buscando') {
     Toast.show({ title: "You're up to date", text: `Quartz ${s.actual} is the latest.`, icon: 'check' });
   } else if (s.fase === 'error' && (s.manual || antes?.fase === 'descargando') && antes?.error !== s.error) {

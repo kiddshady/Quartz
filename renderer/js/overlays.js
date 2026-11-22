@@ -198,14 +198,18 @@ const Toast = (() => {
   }
 
   /**
-   * Toast.show({ title, text, tone: 'default'|'error', duration, icon })
+   * Toast.show({ title, text, tone: 'default'|'error', duration, icon, action })
    * duration:0 → se queda hasta que lo cierren.
+   * action: { label, onSelect } → un botón debajo del texto (Quartz 0.8.0: «Restart
+   * now» cuando la actualización ya bajó). Al tocarlo se apaga (no hay doble
+   * clic que dispare dos veces), corre onSelect y el aviso se cierra.
    * Devuelve { close }. Con uno igual a la vista, devuelve el de ese.
    */
-  function show({ title, text = '', tone = 'default', duration = 4200, icon } = {}) {
+  function show({ title, text = '', tone = 'default', duration = 4200, icon, action = null } = {}) {
     const clave = `${tone}
 ${title}
-${text}`;
+${text}
+${action?.label || ''}`;
     let relevo = false;
     if (actual && actual.el.dataset.state !== 'closing') {
       if (actual.clave === clave) { actual.renovar(); return { close: actual.close }; }
@@ -224,6 +228,7 @@ ${text}`;
       <div class="op-toast__main">
         <div class="op-toast__title"></div>
         ${text ? '<div class="op-toast__text"></div>' : ''}
+        ${action ? '<div class="op-toast__acciones"><button type="button" class="op-btn op-btn--primary op-btn--sm" data-toast-accion></button></div>' : ''}
       </div>
       <button class="op-iconbtn op-iconbtn--sm" data-close aria-label="Close">${Icons.svg('close')}</button>
       ${duration ? '<span class="op-toast__life"></span>' : ''}`;
@@ -248,6 +253,15 @@ ${text}`;
       setTimeout(fuera, 320);
     };
     el.querySelector('[data-close]').addEventListener('click', close);
+    if (action) {
+      const b = el.querySelector('[data-toast-accion]');
+      b.textContent = action.label;
+      b.addEventListener('click', async () => {
+        if (b.disabled) return;
+        b.disabled = true;
+        try { await action.onSelect?.(); } finally { close(); }
+      });
+    }
 
     /* Hover pausa la cuenta: si te acercás a leerlo, no se te escapa. Lo que
        queda se lleva a mano, descontando lo que corrió. Antes se leía de la
