@@ -41,9 +41,9 @@ function crear({ mostrar, salir }) {
   tray = new Tray(icono());
   tray.setToolTip(`Quartz ${app.getVersion()}`);
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Abrir Quartz', click: mostrar },
+    { label: 'Open Quartz', click: mostrar },
     { type: 'separator' },
-    { label: 'Salir', click: salir },
+    { label: 'Quit', click: salir },
   ]));
   // Click izquierdo: mostrar, nunca alternar. Un toggle acá esconde la ventana
   // justo cuando alguien la fue a buscar.

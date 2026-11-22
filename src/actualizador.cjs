@@ -46,10 +46,10 @@ const RELEASES = 'https://github.com/kiddshady/Quartz/releases';
  */
 function soporte({ empaquetada = false, portable = false } = {}) {
   if (!empaquetada) {
-    return { ok: false, motivo: 'Estás corriendo Quartz desde el código fuente. Acá no hay nada que actualizar: usá git.' };
+    return { ok: false, motivo: "You're running Quartz from source. There's nothing to update here: use git." };
   }
   if (portable) {
-    return { ok: false, motivo: 'La versión portable no se actualiza sola: es un solo archivo que dejaste donde quisiste. Bajate el ejecutable nuevo y reemplazá el que tenés.' };
+    return { ok: false, motivo: "The portable version doesn't update itself: it's a single file you put wherever you wanted. Download the new executable and replace the one you have." };
   }
   return { ok: true, motivo: '' };
 }
@@ -87,10 +87,10 @@ function fijar(parche) {
 
 /** El error de electron-updater viene con stack y URL adentro. Alcanza la primera línea. */
 function mensaje(err) {
-  const texto = String(err?.message || err || 'Error desconocido').split('\n')[0].trim();
-  if (/ENOTFOUND|ENETUNREACH|EAI_AGAIN|getaddrinfo/i.test(texto)) return 'No se pudo llegar a GitHub. ¿Hay internet?';
-  if (/ETIMEDOUT|ESOCKETTIMEDOUT/i.test(texto)) return 'GitHub no contestó a tiempo.';
-  if (/404/.test(texto)) return 'La versión nueva no tiene el archivo que hace falta para actualizar.';
+  const texto = String(err?.message || err || 'Unknown error').split('\n')[0].trim();
+  if (/ENOTFOUND|ENETUNREACH|EAI_AGAIN|getaddrinfo/i.test(texto)) return "Couldn't reach GitHub. Is there internet?";
+  if (/ETIMEDOUT|ESOCKETTIMEDOUT/i.test(texto)) return "GitHub didn't answer in time.";
+  if (/404/.test(texto)) return "The new version doesn't have the file needed to update.";
   return texto;
 }
 

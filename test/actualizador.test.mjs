@@ -31,21 +31,21 @@ const instalada = upd.soporte({ empaquetada: true, portable: false });
 ok('instalada: sí', instalada.ok === true);
 ok('y sin motivo que mostrar', instalada.motivo === '');
 ok('desde el código fuente: no', fuente.ok === false);
-ok('y lo explica', /código fuente/i.test(fuente.motivo), fuente.motivo);
+ok('y lo explica', /from source/i.test(fuente.motivo), fuente.motivo);
 ok('portable: no', portable.ok === false);
-ok('y dice qué hacer en su lugar', /reemplaz/i.test(portable.motivo), portable.motivo);
+ok('y dice qué hacer en su lugar', /replace/i.test(portable.motivo), portable.motivo);
 /* Sin argumentos tiene que dar NO. Un default permisivo acá significa ofrecer
    una actualización que después revienta. */
 ok('sin datos, no', upd.soporte().ok === false);
 
 console.log('\n2. El error que ve el usuario');
-ok('sin internet', upd.mensaje(new Error('getaddrinfo ENOTFOUND github.com')) === 'No se pudo llegar a GitHub. ¿Hay internet?');
-ok('sin ruta a la red', /¿Hay internet\?/.test(upd.mensaje(new Error('connect ENETUNREACH 140.82.0.1'))));
-ok('timeout', /no contestó a tiempo/.test(upd.mensaje(new Error('ESOCKETTIMEDOUT'))));
-ok('404: falta el archivo de la versión', /no tiene el archivo/.test(upd.mensaje(new Error('HttpError: 404 Not Found'))));
+ok('sin internet', upd.mensaje(new Error('getaddrinfo ENOTFOUND github.com')) === "Couldn't reach GitHub. Is there internet?");
+ok('sin ruta a la red', /Is there internet\?/.test(upd.mensaje(new Error('connect ENETUNREACH 140.82.0.1'))));
+ok('timeout', /didn't answer in time/.test(upd.mensaje(new Error('ESOCKETTIMEDOUT'))));
+ok('404: falta el archivo de la versión', /doesn't have the file/.test(upd.mensaje(new Error('HttpError: 404 Not Found'))));
 ok('se queda con la primera línea', upd.mensaje(new Error('Se rompió algo\n  at Foo (bar.js:1)')) === 'Se rompió algo');
 ok('un string pelado también sirve', upd.mensaje('qué sé yo') === 'qué sé yo');
-ok('sin nada, no explota', upd.mensaje(null) === 'Error desconocido');
+ok('sin nada, no explota', upd.mensaje(null) === 'Unknown error');
 
 console.log('\n3. Sin iniciar(), nada se dispara');
 /* El módulo entero tiene que ser inerte hasta que la app lo prenda: si estas
@@ -106,7 +106,7 @@ enviados.length = 0;
 falso.falla = new Error('getaddrinfo ENOTFOUND github.com');
 await upd.buscar({ manual: true });
 ok('la fallida: buscando → error, una sola vez', fases() === 'buscando → error', fases());
-ok('y el error llega traducido', enviados.at(-1).error === 'No se pudo llegar a GitHub. ¿Hay internet?');
+ok('y el error llega traducido', enviados.at(-1).error === "Couldn't reach GitHub. Is there internet?");
 
 // Vuelve internet: la siguiente no arrastra el error viejo como si fuera nuevo.
 enviados.length = 0;

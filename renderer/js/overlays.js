@@ -225,7 +225,7 @@ ${text}`;
         <div class="op-toast__title"></div>
         ${text ? '<div class="op-toast__text"></div>' : ''}
       </div>
-      <button class="op-iconbtn op-iconbtn--sm" data-close aria-label="Cerrar">${Icons.svg('close')}</button>
+      <button class="op-iconbtn op-iconbtn--sm" data-close aria-label="Close">${Icons.svg('close')}</button>
       ${duration ? '<span class="op-toast__life"></span>' : ''}`;
 
     // textContent, no innerHTML: el contenido puede venir de un error real.
@@ -496,15 +496,15 @@ const FieldMenu = (() => {
     const canUndo = !ro && document.queryCommandEnabled('undo');
     const clip = await readClip();
     return Menu.showAt(x, y, [
-      { label: 'Deshacer', key: 'Ctrl Z', disabled: !canUndo, onSelect: () => exec('undo') },
+      { label: 'Undo', key: 'Ctrl Z', disabled: !canUndo, onSelect: () => exec('undo') },
       { sep: true },
-      { label: 'Cortar', key: 'Ctrl X', disabled: ro || secret || !hasSel, onSelect: () => exec('cut') },
-      { label: 'Copiar', icon: 'copy', key: 'Ctrl C', disabled: secret || !hasSel, onSelect: () => exec('copy') },
+      { label: 'Cut', key: 'Ctrl X', disabled: ro || secret || !hasSel, onSelect: () => exec('cut') },
+      { label: 'Copy', icon: 'copy', key: 'Ctrl C', disabled: secret || !hasSel, onSelect: () => exec('copy') },
       // Se vuelve a leer al elegir: lo copiado pudo cambiar con el menú abierto.
-      { label: 'Pegar', key: 'Ctrl V', disabled: ro || !clip, onSelect: async () => exec('insertText', (await readClip()) || clip) },
-      { label: 'Suprimir', disabled: ro || !hasSel, onSelect: () => exec('delete') },
+      { label: 'Paste', key: 'Ctrl V', disabled: ro || !clip, onSelect: async () => exec('insertText', (await readClip()) || clip) },
+      { label: 'Delete', disabled: ro || !hasSel, onSelect: () => exec('delete') },
       { sep: true },
-      { label: 'Seleccionar todo', key: 'Ctrl A', disabled: !field.value || all, onSelect: () => field.select() },
+      { label: 'Select all', key: 'Ctrl A', disabled: !field.value || all, onSelect: () => field.select() },
     ]);
   }
 
@@ -637,7 +637,7 @@ const Modal = (() => {
           <div class="op-modal__title"></div>
           ${sub ? '<div class="op-modal__sub"></div>' : ''}
         </div>
-        ${dismissible ? `<button class="op-iconbtn" data-dismiss data-tip="Cerrar" data-tip-key="Esc">${Icons.svg('close')}</button>` : ''}
+        ${dismissible ? `<button class="op-iconbtn" data-dismiss data-tip="Close" data-tip-key="Esc">${Icons.svg('close')}</button>` : ''}
       </div>
       <div class="op-modal__body op-scroll"></div>
       ${actions.length ? '<div class="op-modal__foot"></div>' : ''}`;
@@ -693,12 +693,12 @@ const Modal = (() => {
   }
 
   /** Confirmación destructiva: el rojo aparece acá porque algo se va a romper. */
-  function confirm({ title, sub, confirmLabel = 'Confirmar', danger = false } = {}) {
+  function confirm({ title, sub, confirmLabel = 'Confirm', danger = false } = {}) {
     return show({
       title,
       sub,
       actions: [
-        { label: 'Cancelar', value: false },
+        { label: 'Cancel', value: false },
         { label: confirmLabel, value: true, variant: danger ? 'danger-solid' : 'primary', autofocus: true },
       ],
     }).then((v) => v === true);

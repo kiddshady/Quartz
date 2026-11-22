@@ -11,6 +11,10 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { locale, fmtBytes, fmtNum, fmtDur, fmtMoney } from '../renderer/js/format.js';
+// Desde la 0.7.0 la app arranca en en-US (interfaz en inglés). Este test prueba
+// que el formato siga al locale, así que arranca fijando es-AR (la coma) y al
+// final pasa a en-US (el punto).
+locale.tag = 'es-AR';
 
 let pass = 0; let fail = 0;
 const ok = (n, c, x = '') => { if (c) { pass++; console.log(`  ok   ${n}`); } else { fail++; console.log(`  FALLA ${n} ${x}`); } };

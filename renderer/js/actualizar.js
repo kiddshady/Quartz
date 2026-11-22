@@ -20,11 +20,11 @@ function alCambiar(s) {
   if (!s) return;
   if (s.fase === 'listo' && avisada !== s.version) {
     avisada = s.version;
-    Toast.show({ title: `Quartz ${s.version || ''} está lista`.replace('  ', ' '), text: 'Se bajó sola y entra cuando salgas de Quartz desde la bandeja o apagues la PC. Para tenerla ya, reiniciá desde «Más».', icon: 'check' });
+    Toast.show({ title: `Quartz ${s.version || ''} is ready`.replace('  ', ' '), text: 'It downloaded on its own and installs when you quit Quartz from the tray or shut down the PC. To get it now, restart from “More”.', icon: 'check' });
   } else if (s.manual && s.fase === 'al-dia' && antes?.fase === 'buscando') {
-    Toast.show({ title: 'Estás al día', text: `Quartz ${s.actual} es la última.`, icon: 'check' });
+    Toast.show({ title: "You're up to date", text: `Quartz ${s.actual} is the latest.`, icon: 'check' });
   } else if (s.fase === 'error' && (s.manual || antes?.fase === 'descargando') && antes?.error !== s.error) {
-    Toast.show({ title: 'No se pudo actualizar', text: s.error, tone: 'error' });
+    Toast.show({ title: "Couldn't update", text: s.error, tone: 'error' });
   }
 }
 
@@ -39,13 +39,13 @@ export function itemsActualizar() {
   if (!api || !estado || estado.fase === 'sin-soporte' || estado.fase === 'inactivo') return [];
   const s = estado;
   if (s.fase === 'disponible') {
-    return [{ label: `Bajar Quartz ${s.version}${s.bytes ? ` (${fmtBytes(s.bytes)})` : ''}`, icon: 'download', onSelect: () => api.descargar() }];
+    return [{ label: `Download Quartz ${s.version}${s.bytes ? ` (${fmtBytes(s.bytes)})` : ''}`, icon: 'download', onSelect: () => api.descargar() }];
   }
   if (s.fase === 'descargando') {
-    return [{ label: `Bajando… ${Math.round((s.progreso?.pct || 0) * 100)} %`, icon: 'download', disabled: true }];
+    return [{ label: `Downloading… ${Math.round((s.progreso?.pct || 0) * 100)} %`, icon: 'download', disabled: true }];
   }
   if (s.fase === 'listo') {
-    return [{ label: `Reiniciar con Quartz ${s.version}`, icon: 'retry', onSelect: () => api.instalar() }];
+    return [{ label: `Restart with Quartz ${s.version}`, icon: 'retry', onSelect: () => api.instalar() }];
   }
-  return [{ label: s.fase === 'buscando' ? 'Buscando actualizaciones…' : 'Buscar actualizaciones', icon: 'retry', disabled: s.fase === 'buscando', onSelect: () => api.buscar({ manual: true }) }];
+  return [{ label: s.fase === 'buscando' ? 'Checking for updates…' : 'Check for updates', icon: 'retry', disabled: s.fase === 'buscando', onSelect: () => api.buscar({ manual: true }) }];
 }

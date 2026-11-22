@@ -73,9 +73,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    sin puntos ni espacios al final y sin los nombres reservados (CON, NUL…). */
 function tituloValido(t) {
   const s = String(t ?? '').replace(/[\\/:*?"<>|#^[\]\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
-  if (!s) throw new Error('la nota necesita un título');
-  if (s.length > 120) throw new Error('el título es muy largo (más de 120 letras)');
-  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(s)) throw new Error(`«${s}» no puede ser un nombre de archivo en Windows`);
+  if (!s) throw new Error('a note needs a title');
+  if (s.length > 120) throw new Error('the title is too long (over 120 characters)');
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(s)) throw new Error(`“${s}” can't be a file name on Windows`);
   return s;
 }
 
@@ -225,7 +225,7 @@ function crearDiario({ dir = carpetaPorDefecto(), vigilar = false } = {}) {
   }
   async function exigir(ref, notas) {
     const n = await buscarNota(ref, notas);
-    if (!n) throw new Error(`no hay ninguna nota «${String(ref).trim()}» en el diario`);
+    if (!n) throw new Error(`there's no note “${String(ref).trim()}” in the journal`);
     return n;
   }
 
@@ -240,7 +240,7 @@ function crearDiario({ dir = carpetaPorDefecto(), vigilar = false } = {}) {
   }
 
   async function escribir(id, texto, { antes = null } = {}) {
-    if (texto.length > MAX_CHARS) throw new Error('la nota es demasiado larga');
+    if (texto.length > MAX_CHARS) throw new Error('the note is too long');
     if (antes) await guardarVersion(antes);
     propias.set(id, hashDe(texto));
     await escribirAtomico(rutaDe(id), texto);
@@ -341,9 +341,9 @@ function crearDiario({ dir = carpetaPorDefecto(), vigilar = false } = {}) {
       const dia = clave(titulo) === 'hoy' ? diaDe() : esFecha(titulo) ? String(titulo) : null;
       const t = dia || tituloValido(titulo);
       const ya = await buscarNota(t, notas);
-      if (ya) throw new Error(`ya hay una nota «${ya.titulo}»: no se pisa (usá agregar para sumarle texto)`);
+      if (ya) throw new Error(`there's already a note “${ya.titulo}”: it won't be overwritten`);
       const id = dia ? `${CARPETA_DIAS}/${dia}` : t;
-      if (fs.existsSync(rutaDe(id))) throw new Error(`ya existe ${rutaDe(id)}`);
+      if (fs.existsSync(rutaDe(id))) throw new Error(`${rutaDe(id)} already exists`);
       let cuerpo = norm(texto).replace(/^\n+/, '');
       if (dia && cuerpo.trim()) cuerpo = sellar(cuerpo);   // un día que nace con texto: la entrada lleva su hora
       // la fecha va arriba solo si se pide: si no, sale del archivo (una nota nueva no arranca con datos encima)
@@ -354,19 +354,19 @@ function crearDiario({ dir = carpetaPorDefecto(), vigilar = false } = {}) {
     /** La nota de un día (hoy si no se dice), creada vacía si no estaba. */
     async dia(fecha = diaDe()) {
       const f = clave(fecha) === 'hoy' ? diaDe() : fecha;
-      if (!esFecha(f)) throw new Error(`«${fecha}» no es una fecha AAAA-MM-DD`);
+      if (!esFecha(f)) throw new Error(`“${fecha}” is not a YYYY-MM-DD date`);
       return (await buscarNota(f)) || api.crear({ titulo: f });
     },
 
     /** Suma texto al final de una nota. Si es un día y no está, la crea; en un día, la entrada lleva su hora. */
     async agregar(ref, texto) {
       const t = norm(texto).trim();
-      if (!t) throw new Error('no hay nada para agregar');
+      if (!t) throw new Error('nothing to add');
       const notas = await escanear();
       let n = await buscarNota(ref, notas);
       const r = String(ref ?? '').trim();
       if (!n && (clave(r) === 'hoy' || esFecha(r))) n = await api.dia(r);
-      if (!n) throw new Error(`no hay ninguna nota «${r}» en el diario (creala primero)`);
+      if (!n) throw new Error(`there's no note “${r}” in the journal (create it first)`);
       const base = n.texto.replace(/\s+$/, '');
       const entrada = n.dia ? sellar(t) : t;
       return escribir(n.id, `${base}${base ? '\n\n' : ''}${entrada}\n`, { antes: n.texto ? n : null });
@@ -399,11 +399,11 @@ function crearDiario({ dir = carpetaPorDefecto(), vigilar = false } = {}) {
     async renombrar(ref, nuevo) {
       const notas = await escanear();
       const n = await exigir(ref, notas);
-      if (n.dia) throw new Error('las notas de los días se llaman por su fecha');
+      if (n.dia) throw new Error('day notes are named by their date');
       const t = tituloValido(nuevo);
       if (t === n.titulo) return { nota: n, corregidas: 0 };
       const otra = await buscarNota(t, notas);
-      if (otra && otra.id !== n.id) throw new Error(`ya hay una nota «${otra.titulo}»`);
+      if (otra && otra.id !== n.id) throw new Error(`there's already a note “${otra.titulo}”`);
       const id = n.id.includes('/') ? `${n.id.slice(0, n.id.lastIndexOf('/'))}/${t}` : t;
       await guardarVersion(n);
       propias.set(id, n.hash);

@@ -32,7 +32,7 @@ function wireVentana() {
   maxBtn?.addEventListener('click', () => w?.toggleMaximize());
   w?.onMaximized((isMax) => {
     maxBtn.classList.toggle('is-b', isMax);   // los dos íconos se cruzan (.op-iconswap)
-    maxBtn.setAttribute('aria-label', isMax ? 'Restaurar' : 'Maximizar');
+    maxBtn.setAttribute('aria-label', isMax ? 'Restore' : 'Maximize');
   });
   // doble clic en la titlebar: maximizar, como cualquier ventana de Windows
   document.querySelector('.op-titlebar')?.addEventListener('dblclick', (e) => {
@@ -68,8 +68,8 @@ async function tellAsides() {
   Toast.show({
     tone: 'error',
     duration: 0,
-    title: files.length === 1 ? `${files[0]} estaba dañado` : `${files.join(', ')} estaban dañados`,
-    text: `${files.length === 1 ? 'Quedó' : 'Quedaron'} aparte en la carpeta de datos, con «.corrupto-» en el nombre.`,
+    title: files.length === 1 ? `${files[0]} was damaged` : `${files.join(', ')} were damaged`,
+    text: `${files.length === 1 ? 'It was' : 'They were'} set aside in the data folder, with “.corrupto-” in the name.`,
   });
 }
 
@@ -105,7 +105,7 @@ function boot() {
   try {
     diario = montarDiario(raiz, { menuExtra: () => { const u = itemsActualizar(); return u.length ? [{ sep: true }, ...u] : []; } });
   } catch (err) {
-    raiz.innerHTML = `<section class="vt-diario__hoja" style="grid-column: 1 / -1; display: grid; place-items: center">${empty({ icon: 'alert', title: 'No se pudo abrir el Diario', text: err.message })}</section>`;
+    raiz.innerHTML = `<section class="vt-diario__hoja" style="grid-column: 1 / -1; display: grid; place-items: center">${empty({ icon: 'alert', title: "Couldn't open the journal", text: err.message })}</section>`;
     Icons.mount(raiz);
     console.error(err);
   }

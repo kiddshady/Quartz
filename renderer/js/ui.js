@@ -82,13 +82,13 @@ export function colorToken(nombre) {
 export const SHAPES = ['circle', 'square', 'diamond', 'hex'];
 
 export const STATE_LABEL = {
-  idle: 'Sin usar',
-  queued: 'En cola',
-  running: 'Corriendo',
-  waiting: 'Esperando',
-  done: 'Listo',
-  skipped: 'Omitido',
-  failed: 'Falló',
+  idle: 'Unused',
+  queued: 'Queued',
+  running: 'Running',
+  waiting: 'Waiting',
+  done: 'Done',
+  skipped: 'Skipped',
+  failed: 'Failed',
 };
 
 /** Renombrá los estados con las palabras de tu dominio. */
@@ -161,7 +161,7 @@ export function empty({ icon = 'inbox', title, text, actions = '' } = {}) {
 /* ── Errores ─────────────────────────────────────────────────────────────────
    Toda acción que puede fallar pasa por acá. El punto no es "no romper": es
    que el error se VEA. Un catch vacío convierte un bug en un misterio. */
-export async function attempt(fn, { errorTitle = 'No se pudo completar' } = {}) {
+export async function attempt(fn, { errorTitle = "Couldn't finish" } = {}) {
   try {
     return await fn();
   } catch (err) {

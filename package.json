@@ -2,7 +2,7 @@
   "name": "quartz",
   "productName": "Quartz",
   "version": "0.6.0",
-  "description": "El Diario de Fran: notas en Markdown enlazadas con [[ ]], con backlinks y grafo, con piel de cuarzo y ámbar sobre Opal.",
+  "description": "A journal: Markdown notes linked with [[ ]], with backlinks and a graph, in quartz and amber over Opal.",
   "main": "main.cjs",
   "author": "Kidd Shady · Umbrovex Systems <umbrovex@proton.me>",
   "license": "MIT",

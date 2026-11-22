@@ -28,7 +28,7 @@ function enlaceWiki(adentro) {
   if (!titulo) return null;
   const existe = wikiActual(titulo) !== false;
   const texto = (alias ?? destino).trim() || titulo;
-  return `<a href="#" class="md-wiki${existe ? '' : ' is-fantasma'}" data-nota="${esc(titulo)}" data-tip="${esc(existe ? titulo : `${titulo}: todavía no existe, un clic la crea`)}">${esc(texto)}</a>`;
+  return `<a href="#" class="md-wiki${existe ? '' : ' is-fantasma'}" data-nota="${esc(titulo)}" data-tip="${esc(existe ? titulo : `${titulo}: doesn't exist yet, click to create it`)}">${esc(texto)}</a>`;
 }
 
 /* Lo de adentro de un renglón. Primero se apartan el código y los links (su

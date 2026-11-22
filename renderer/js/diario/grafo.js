@@ -224,7 +224,7 @@ export function crearGrafo(caja, { alElegir, chico = false }) {
   }
   function mostrarTip(n, x, y) {
     if (!n) { tip.classList.remove('is-on'); return; }
-    tip.innerHTML = `<b>${esc(n.titulo)}</b>${n.fantasma ? '<span>todavía no existe</span>' : n.grado ? `<span>${n.grado} ${n.grado === 1 ? 'enlace' : 'enlaces'}</span>` : ''}`;
+    tip.innerHTML = `<b>${esc(n.titulo)}</b>${n.fantasma ? "<span>doesn't exist yet</span>" : n.grado ? `<span>${n.grado} ${n.grado === 1 ? 'link' : 'links'}</span>` : ''}`;
     const w = tip.offsetWidth;
     tip.style.transform = `translate(${Math.round(Math.min(W - w - 6, Math.max(6, x - w / 2)))}px, ${Math.round(y + 14 > H - 40 ? y - 44 : y + 14)}px)`;
     tip.classList.add('is-on');

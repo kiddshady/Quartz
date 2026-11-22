@@ -97,7 +97,7 @@ async function correr() {
   console.log('\n2. La de hoy, con el teclado y sin foco');
   await js(win, `document.activeElement?.blur()`);
   await teclas(win, ['Control+D']);
-  ok('Ctrl+D sin foco abre la de hoy, para escribir', await hasta(win, `document.querySelector('.vt-diario__hoja').classList.contains('is-escribir') && /^Hoy/.test(document.querySelector('.vt-diario__titulo').textContent)`));
+  ok('Ctrl+D sin foco abre la de hoy, para escribir', await hasta(win, `document.querySelector('.vt-diario__hoja').classList.contains('is-escribir') && /^Today/.test(document.querySelector('.vt-diario__titulo').textContent)`));
   await escribir(win, 'Hoy estudié para el final. Mañana sigo con [[Biol');
   ok('[[ abre el menú de notas', await hasta(win, `document.querySelector('.vt-diario__sugerir').classList.contains('is-on')`));
   await foto(win, '2-sugerir');
@@ -110,7 +110,7 @@ async function correr() {
   let guardado = false;
   for (let i = 0; i < 60 && !guardado; i++) { guardado = fs.existsSync(archivo) && fs.readFileSync(archivo, 'utf8').includes('estudié para el final'); await espera(50); }
   ok('se guarda en diario/AAAA-MM-DD.md', guardado);
-  ok('  y lo dice', await hasta(win, `document.querySelector('.vt-diario__estado').textContent.includes('Guardado')`));
+  ok('  y lo dice', await hasta(win, `document.querySelector('.vt-diario__estado').textContent.includes('Saved')`));
   const enDisco = fs.readFileSync(archivo, 'utf8');
   ok('la entrada empieza con la hora en que se escribió, una sola vez', /^## \d{2}:\d{2}\n\nHoy estudié/.test(enDisco) && (enDisco.match(/^## \d{2}:\d{2}$/gm) || []).length === 1, JSON.stringify(enDisco));
 
@@ -151,7 +151,7 @@ async function correr() {
   await hasta(win, `document.querySelector('.vt-diario__titulo').textContent.includes('Bienvenida')`);
   fs.appendFileSync(path.join(DIARIO, 'Bienvenida.md'), '\nUna línea que sumó CC desde afuera.\n');
   ok('la nota abierta se pone al día sola', await hasta(win, `document.querySelector('.vt-md').textContent.includes('sumó CC desde afuera')`, 5000));
-  ok('  y lo avisa', await hasta(win, `document.querySelector('.vt-diario__estado').textContent.includes('afuera')`));
+  ok('  y lo avisa', await hasta(win, `document.querySelector('.vt-diario__estado').textContent.includes('outside')`));
 
   console.log('\n6. Buscar');
   await teclas(win, ['Control+K']);

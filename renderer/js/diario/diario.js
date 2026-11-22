@@ -44,6 +44,8 @@ Icons.add({
 });
 
 const clave = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+// «hoy» o «today»: en la búsqueda, en un [[ ]] y en abrir() llevan a la nota de hoy
+const HOY = new Set(['hoy', 'today']);
 const esFecha = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s));
 const dos = (n) => String(n).padStart(2, '0');
 const hoyEs = () => { const d = new Date(); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`; };
@@ -55,11 +57,11 @@ function nombreDia(f, { largo = true } = {}) {
   const hoy = hoyEs();
   const d = new Date(`${f}T12:00:00`);
   const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-  if (f === hoy) return largo ? `Hoy, ${d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'hoy';
-  if (f === `${ayer.getFullYear()}-${dos(ayer.getMonth() + 1)}-${dos(ayer.getDate())}`) return largo ? `Ayer, ${d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'ayer';
+  if (f === hoy) return largo ? `Today, ${d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'today';
+  if (f === `${ayer.getFullYear()}-${dos(ayer.getMonth() + 1)}-${dos(ayer.getDate())}`) return largo ? `Yesterday, ${d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'yesterday';
   const o = largo ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' };
   if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
-  const t = d.toLocaleDateString('es-AR', o).replace('.', '');
+  const t = d.toLocaleDateString('en-US', o).replace('.', '');
   return largo ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 const tituloDe = (n) => (n.dia ? nombreDia(n.dia) : n.titulo);
@@ -91,19 +93,19 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     <aside class="vt-diario__lado">
       <div class="vt-diario__barras">
         <div class="vt-diario__barra vt-diario__barra--normal">
-          <div class="op-inputwrap vt-diario__buscar">${Icons.svg('search')}<input class="op-input" type="search" placeholder="Buscar o saltar" spellcheck="false" aria-label="Buscar en el diario"></div>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="elegir" aria-label="Seleccionar notas" data-tip="Seleccionar notas">${Icons.svg('elegir')}</button>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="hoy" aria-label="La nota de hoy" data-tip="La nota de hoy (Ctrl+D)">${Icons.svg('calendar')}</button>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="nueva" aria-label="Nota nueva" data-tip="Nota nueva (Ctrl+N)">${Icons.svg('plus')}</button>
+          <div class="op-inputwrap vt-diario__buscar">${Icons.svg('search')}<input class="op-input" type="search" placeholder="Search or jump to" spellcheck="false" aria-label="Search the journal"></div>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="elegir" aria-label="Select notes" data-tip="Select notes">${Icons.svg('elegir')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="hoy" aria-label="Today's note" data-tip="Today's note (Ctrl+D)">${Icons.svg('calendar')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="nueva" aria-label="New note" data-tip="New note (Ctrl+N)">${Icons.svg('plus')}</button>
         </div>
         <div class="vt-diario__barra vt-diario__barra--sel" inert>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="sel-salir" aria-label="Dejar de seleccionar" data-tip="Listo (Esc)">${Icons.svg('close')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="sel-salir" aria-label="Stop selecting" data-tip="Done (Esc)">${Icons.svg('close')}</button>
           <span class="vt-diario__selcuenta" aria-live="polite"></span>
           <button type="button" class="op-btn op-btn--ghost op-btn--sm" data-accion="sel-todas" data-tip="Ctrl+A"><span class="vt-diario__seltodas"></span></button>
-          <button type="button" class="op-btn op-btn--danger op-btn--sm" data-accion="sel-papelera" data-tip="Supr" disabled>${Icons.svg('trash')}<span>Papelera</span></button>
+          <button type="button" class="op-btn op-btn--danger op-btn--sm" data-accion="sel-papelera" data-tip="Del" disabled>${Icons.svg('trash')}<span>Trash</span></button>
         </div>
       </div>
-      <div class="vt-diario__lista op-scroll" role="listbox" aria-label="Las notas" tabindex="-1"></div>
+      <div class="vt-diario__lista op-scroll" role="listbox" aria-label="Notes" tabindex="-1"></div>
     </aside>
     <section class="vt-diario__hoja">
       <header class="vt-diario__cab">
@@ -113,29 +115,29 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
         </div>
         <span class="vt-diario__estado" aria-live="polite"></span>
         <div class="vt-diario__acciones">
-          <button type="button" class="op-iconbtn op-iconbtn--sm op-iconswap vt-diario__modo" data-accion="modo" aria-label="Escribir" data-tip="Escribir (Ctrl+E)">${Icons.svg('edit')}${Icons.svg('eye')}</button>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="grafo" aria-label="El grafo" data-tip="El grafo (Ctrl+G)">${Icons.svg('grafo')}</button>
-          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="mas" aria-label="Más" data-tip="Más">${Icons.svg('more')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm op-iconswap vt-diario__modo" data-accion="modo" aria-label="Write" data-tip="Write (Ctrl+E)">${Icons.svg('edit')}${Icons.svg('eye')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="grafo" aria-label="Graph" data-tip="Graph (Ctrl+G)">${Icons.svg('grafo')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="mas" aria-label="More" data-tip="More">${Icons.svg('more')}</button>
         </div>
       </header>
       <div class="vt-diario__cuerpo">
         <div class="vt-diario__leer op-scroll" tabindex="-1"><div class="vt-md"></div></div>
-        <textarea class="vt-diario__editor op-scroll" spellcheck="false" aria-label="La nota" placeholder="Escribí… Con [[ nombrás otra nota."></textarea>
-        <div class="vt-diario__sugerir" role="listbox" aria-label="Notas para enlazar"></div>
+        <textarea class="vt-diario__editor op-scroll" spellcheck="false" aria-label="Note" placeholder="Write… Type [[ to link another note."></textarea>
+        <div class="vt-diario__sugerir" role="listbox" aria-label="Notes to link"></div>
         <div class="vt-diario__grande"></div>
         <div class="vt-diario__vacio"></div>
       </div>
     </section>
     <aside class="vt-diario__panel">
       <div class="vt-diario__sec vt-diario__anio">
-        <div><div class="vt-diario__sectit">Hace un año, hoy</div><div class="vt-diario__aniocuerpo"></div></div>
+        <div><div class="vt-diario__sectit">A year ago today</div><div class="vt-diario__aniocuerpo"></div></div>
       </div>
       <div class="vt-diario__sec">
-        <div class="vt-diario__sectit">Te nombran <span class="vt-diario__cuenta"></span></div>
+        <div class="vt-diario__sectit">Linked from <span class="vt-diario__cuenta"></span></div>
         <div class="vt-diario__back op-scroll"></div>
       </div>
       <div class="vt-diario__sec vt-diario__sec--grafo">
-        <div class="vt-diario__sectit">Alrededor</div>
+        <div class="vt-diario__sectit">Nearby</div>
         <div class="vt-diario__mini"></div>
       </div>
     </aside>`;
@@ -201,7 +203,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     pintarAnio();
     if (actual) pintarBack();
   }
-  const existe = (t) => existen.has(clave(t)) || (clave(t) === 'hoy' && existen.has(hoyEs()));
+  const existe = (t) => existen.has(clave(t)) || (HOY.has(clave(t)) && existen.has(hoyEs()));
 
   /* ── La lista ────────────────────────────────────────────────────────── */
   async function correrBusqueda() {
@@ -210,14 +212,14 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   function pintarLista() {
     const items = [];
     if (resultados) {
-      const exacta = resultados.some((r) => clave(r.titulo) === clave(q)) || (clave(q) === 'hoy' && existe('hoy'));
+      const exacta = resultados.some((r) => clave(r.titulo) === clave(q)) || (HOY.has(clave(q)) && existe('hoy'));
       for (const r of resultados) items.push({ key: `b:${r.id}`, html: itemHtml(r, r.fragmento) });
       if (!exacta && q.trim() && !eligiendo) {
         items.push({ key: 'crear', html: `<button type="button" class="vt-diario__item vt-diario__item--crear" role="option" data-crear="1">
           <span class="vt-diario__ico" aria-hidden="true">${Icons.svg('plus')}</span>
-          <span class="vt-diario__txt"><span class="vt-diario__nom">Crear «${esc(q.trim())}»</span><span class="vt-diario__res">Enter</span></span></button>` });
+          <span class="vt-diario__txt"><span class="vt-diario__nom">Create “${esc(q.trim())}”</span><span class="vt-diario__res">Enter</span></span></button>` });
       }
-      if (!items.length) items.push({ key: 'nada', html: '<p class="vt-diario__nada">Nada por acá.</p>' });
+      if (!items.length) items.push({ key: 'nada', html: '<p class="vt-diario__nada">Nothing here.</p>' });
     } else {
       let mes = '';
       for (const n of notas) {
@@ -225,7 +227,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
         if (m !== mes) {
           mes = m;
           const d = new Date(`${m}-15T12:00:00`);
-          const t = d.toLocaleDateString('es-AR', { month: 'long', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
+          const t = d.toLocaleDateString('en-US', { month: 'long', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
           items.push({ key: `m:${m}`, html: `<div class="vt-diario__mes">${esc(t.charAt(0).toUpperCase() + t.slice(1))}</div>` });
         }
         items.push({ key: n.id, html: itemHtml(n, n.resumen) });
@@ -242,8 +244,8 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     return `<button type="button" class="vt-diario__item${activo ? ' is-activo' : ''}${elegida ? ' is-elegida' : ''}${n.dia ? ' is-dia' : ''}" role="option" aria-selected="${eligiendo ? elegida : activo}" data-id="${esc(n.id)}" style="--vt-edad: ${edadDe(n.dia || n.fecha).toFixed(3)}">
       <span class="vt-diario__ico" aria-hidden="true">${n.dia ? `<b>${esc(String(Number(n.dia.slice(8))))}</b>` : Icons.svg('file')}<span class="vt-diario__casilla">${Icons.svg('check')}</span></span>
       <span class="vt-diario__txt">
-        <span class="vt-diario__fila"><span class="vt-diario__nom">${esc(n.dia ? nombreDia(n.dia, { largo: true }).replace(/^(Hoy|Ayer), /, '$1 · ') : n.titulo)}</span>${n.dia ? '' : `<span class="vt-diario__cuando">${esc(nombreDia(n.fecha, { largo: false }))}</span>`}</span>
-        ${sub ? `<span class="vt-diario__res">${esc(sub)}</span>` : n.vacia ? '<span class="vt-diario__res is-vacia">vacía</span>' : ''}
+        <span class="vt-diario__fila"><span class="vt-diario__nom">${esc(n.dia ? nombreDia(n.dia, { largo: true }).replace(/^(Today|Yesterday), /, '$1 · ') : n.titulo)}</span>${n.dia ? '' : `<span class="vt-diario__cuando">${esc(nombreDia(n.fecha, { largo: false }))}</span>`}</span>
+        ${sub ? `<span class="vt-diario__res">${esc(sub)}</span>` : n.vacia ? '<span class="vt-diario__res is-vacia">empty</span>' : ''}
       </span>
     </button>`;
   }
@@ -297,20 +299,21 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   }
   function pintarSel() {
     const n = elegidas.size;
-    frase(selCuenta, n ? `${n} ${n === 1 ? 'nota' : 'notas'}` : 'Elegí las notas');
+    frase(selCuenta, n ? `${n} ${n === 1 ? 'note' : 'notes'}` : 'Select notes');
     const orden = visibles();
-    frase(selTodas, orden.length && orden.every((id) => elegidas.has(id)) ? 'Ninguna' : 'Todas');
+    frase(selTodas, orden.length && orden.every((id) => elegidas.has(id)) ? 'None' : 'All');
     selPapelera.disabled = !n;
   }
   async function papeleraElegidas() {
     const ids = [...elegidas].filter((id) => notas.some((n) => n.id === id));
     if (!ids.length) return;
     const nombres = ids.map((id) => tituloDe(notas.find((n) => n.id === id)));
-    const lista4 = nombres.length <= 4 ? `${nombres.map((t) => `«${t}»`).join(', ').replace(/, ([^,]*)$/, ' y $1')} se ${nombres.length === 1 ? 'va' : 'van'}` : `Las ${nombres.length} se van`;
+    const uno = ids.length === 1;
+    const quienes = nombres.length <= 4 ? `${nombres.map((t) => `“${t}”`).join(', ').replace(/, ([^,]*)$/, ' and $1')} ${uno ? 'goes' : 'go'}` : `All ${nombres.length} go`;
     const si = await Modal.confirm({
-      title: ids.length === 1 ? 'Mandar a la papelera' : `Mandar ${ids.length} notas a la papelera`,
-      sub: `${lista4} a .diario/papelera, adentro de la carpeta del diario. No se ${ids.length === 1 ? 'borra: la' : 'borran: las'} podés sacar de ahí.`,
-      confirmLabel: 'Mandar', danger: true,
+      title: uno ? 'Move to trash' : `Move ${ids.length} notes to trash`,
+      sub: `${quienes} to .diario/papelera, inside the journal folder. ${uno ? "It isn't deleted: you can take it back out" : "They aren't deleted: you can take them back out"} from there.`,
+      confirmLabel: 'Move', danger: true,
     });
     if (!si) return;
     const abierta = actual && ids.includes(actual.id);
@@ -324,8 +327,8 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     await refrescar();
     pintarNota(); pintarBack(); pintarGrafos();
     const idas = ids.length - fallas;
-    if (fallas) Toast.show({ title: 'No se pudieron mover todas', text: `${idas} a la papelera, ${fallas} ${fallas === 1 ? 'quedó' : 'quedaron'} donde ${fallas === 1 ? 'estaba' : 'estaban'}.`, tone: 'error' });
-    else Toast.show({ title: idas === 1 ? 'Una nota a la papelera' : `${idas} notas a la papelera`, text: 'Están en .diario/papelera.', icon: 'check' });
+    if (fallas) Toast.show({ title: "Couldn't move them all", text: `${idas} moved to trash, ${fallas} ${fallas === 1 ? 'stayed where it was' : 'stayed where they were'}.`, tone: 'error' });
+    else Toast.show({ title: idas === 1 ? 'Note moved to trash' : `${idas} notes moved to trash`, text: idas === 1 ? "It's in .diario/papelera." : "They're in .diario/papelera.", icon: 'check' });
   }
   lista.addEventListener('keydown', (e) => {
     const items = [...lista.querySelectorAll('.vt-diario__item')];
@@ -360,30 +363,30 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     await correrBusqueda();
     const exacta = resultados.find((r) => clave(r.titulo) === clave(t));
     if (exacta) return abrir(exacta.id).then(limpiarBusqueda);
-    if (clave(t) === 'hoy' || esFecha(t)) return irDia(clave(t) === 'hoy' ? hoyEs() : t).then(limpiarBusqueda);
+    if (HOY.has(clave(t)) || esFecha(t)) return irDia(HOY.has(clave(t)) ? hoyEs() : t).then(limpiarBusqueda);
     if (creando || !resultados.length) return crearNota(t);
     abrir(resultados[0].id).then(limpiarBusqueda);
   });
   function limpiarBusqueda() {
     buscar.value = ''; q = ''; resultados = null; creando = false;
-    buscar.placeholder = 'Buscar o saltar';
+    buscar.placeholder = 'Search or jump to';
     pintarLista();
   }
   function nuevaConTeclado() {
     limpiarBusqueda();
     creando = true;
-    buscar.placeholder = 'El título de la nota nueva, y Enter';
+    buscar.placeholder = 'Title of the new note, then Enter';
     buscar.focus();
   }
   async function crearNota(t) {
-    const n = await attempt(() => api.crear({ titulo: t }), { errorTitle: 'No se pudo crear la nota' });
+    const n = await attempt(() => api.crear({ titulo: t }), { errorTitle: "Couldn't create the note" });
     if (!n) return;
     limpiarBusqueda();
     await refrescar();
     await abrir(n.id, { escribir: true });
   }
   async function irDia(f = hoyEs()) {
-    const n = await attempt(() => api.dia(f), { errorTitle: 'No se pudo abrir el día' });
+    const n = await attempt(() => api.dia(f), { errorTitle: "Couldn't open the day" });
     if (!n) return;
     if (!notas.some((x) => x.id === n.id)) await refrescar();
     await abrir(n.id, { escribir: true });
@@ -394,7 +397,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     await guardarYa();
     const n = await api.leer(ref).catch(() => null);
     if (!vivo) return;
-    if (!n) { Toast.show({ title: 'Esa nota ya no está', text: String(ref), icon: 'alert' }); refrescar(); return; }
+    if (!n) { Toast.show({ title: 'That note is gone', text: String(ref), icon: 'alert' }); refrescar(); return; }
     actual = { id: n.id, titulo: n.titulo, dia: n.dia, fecha: n.fecha, etiquetas: n.etiquetas, hash: n.hash, base: n.texto };
     sucio = false;
     editor.value = n.texto;
@@ -423,7 +426,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     hoja.classList.toggle('is-escribir', hay && modo === 'escribir');
     hoja.classList.toggle('is-hoy', hay && actual.dia === hoyEs());   // el latido de la última hora
     modoBtn.classList.toggle('is-b', modo === 'escribir');
-    const tipModo = modo === 'escribir' ? 'Leer (Ctrl+E)' : 'Escribir (Ctrl+E)';
+    const tipModo = modo === 'escribir' ? 'Read (Ctrl+E)' : 'Write (Ctrl+E)';
     modoBtn.dataset.tip = tipModo; modoBtn.setAttribute('aria-label', tipModo.replace(/ \(.*/, ''));
     pintarCab();
     if (!hay) { pintarVacio(); return; }
@@ -433,7 +436,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     const cuerpo = sinFrontmatter(editor.value);
     const html = cuerpo.trim()
       ? md(cuerpo, { resaltar, wiki: existe })
-      : `<p class="vt-diario__nada">Esta nota está vacía. Ctrl+E para escribir.</p>`;
+      : `<p class="vt-diario__nada">This note is empty. Ctrl+E to write.</p>`;
     if (relevo) swap(leerMd, html, { relevo: true }); else leerMd.innerHTML = html;
     initScrollFades(leer);
   }
@@ -442,8 +445,8 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     if (pintadoVacio === que) return;
     pintadoVacio = que;
     swap(vacio, que === 'nada'
-      ? empty({ icon: 'book', title: 'Tu diario está vacío', text: 'Ctrl+D abre la nota de hoy y Ctrl+N una nota nueva. Con [[ nombrás otra nota, y quedan enlazadas.', actions: '<button type="button" class="op-btn op-btn--secondary" data-accion="hoy">Escribir hoy</button>' })
-      : empty({ icon: 'book', title: 'Elegí una nota', text: 'O escribí la de hoy con Ctrl+D.' }), { relevo: true });
+      ? empty({ icon: 'book', title: 'Your journal is empty', text: "Ctrl+D opens today's note and Ctrl+N a new one. Type [[ to name another note and they get linked.", actions: '<button type="button" class="op-btn op-btn--secondary" data-accion="hoy">Write today</button>' })
+      : empty({ icon: 'book', title: 'Pick a note', text: "Or write today's with Ctrl+D." }), { relevo: true });
   }
   const cuerpoFoco = () => (modo === 'escribir' ? editor : leer).focus({ preventScroll: true });
 
@@ -465,7 +468,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     irANota(a.dataset.nota);
   });
   async function irANota(t) {
-    if (clave(t) === 'hoy' || esFecha(t)) return irDia(clave(t) === 'hoy' ? hoyEs() : t);
+    if (HOY.has(clave(t)) || esFecha(t)) return irDia(HOY.has(clave(t)) ? hoyEs() : t);
     const n = await api.leer(t).catch(() => null);
     if (n) return abrir(n.id);
     crearNota(t);
@@ -516,7 +519,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   editor.addEventListener('input', () => {
     if (!actual) return;
     sucio = editor.value !== actual.base;
-    if (sucio) ponerEstado('Sin guardar');
+    if (sucio) ponerEstado('Unsaved');
     clearTimeout(tGuardar);
     tGuardar = setTimeout(guardarYa, 700);
     revisarSugerir();
@@ -527,7 +530,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     if (!actual || !sucio) return Promise.resolve();
     const yo = actual;
     guardando = (async () => {
-      ponerEstado('Guardando');
+      ponerEstado('Saving');
       let texto = editor.value;
       let r = await api.guardar(yo.id, texto, yo.hash).catch((err) => ({ error: err }));
       if (r?.conflicto) {
@@ -544,13 +547,13 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
         r = await api.guardar(yo.id, texto, r.nota.hash).catch((err) => ({ error: err }));
         if (!r?.error) {
           Toast.show(juntas != null
-            ? { title: 'Se juntaron las dos cosas', text: 'Alguien sumó algo al final de la nota mientras escribías: quedó lo tuyo y lo suyo.', icon: 'info' }
-            : { title: 'Quedó lo tuyo', text: 'Alguien cambió la nota mientras escribías. Su versión quedó guardada en .diario/versiones.', icon: 'info' });
+            ? { title: 'Both changes were merged', text: 'Someone added to the end of the note while you were writing: both your text and theirs were kept.', icon: 'info' }
+            : { title: 'Your version was kept', text: 'Someone changed the note while you were writing. Their version was saved in .diario/versiones.', icon: 'info' });
         }
       }
       if (r?.error) {
-        ponerEstado('No se pudo guardar', 'error');
-        Toast.show({ title: 'No se pudo guardar la nota', text: String(r.error?.message || r.error), tone: 'error' });
+        ponerEstado("Couldn't save", 'error');
+        Toast.show({ title: "Couldn't save the note", text: String(r.error?.message || r.error), tone: 'error' });
         return;
       }
       if (actual === yo) {
@@ -559,7 +562,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
         yo.etiquetas = r.nota.etiquetas;
         sucio = editor.value !== yo.base;
         pintarCab();
-        ponerEstado(sucio ? 'Sin guardar' : 'Guardado');
+        ponerEstado(sucio ? 'Unsaved' : 'Saved');
       }
     })().finally(() => { guardando = null; });
     return guardando;
@@ -571,7 +574,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     await refrescar();
     if (!mia || !actual || mia.desde === 'app') return;
     if (!mia.existe) {
-      Toast.show({ title: 'La nota se movió o se borró afuera', text: `${actual.id}.md`, icon: 'alert' });
+      Toast.show({ title: 'The note was moved or deleted outside Quartz', text: `${actual.id}.md`, icon: 'alert' });
       actual = null; pintarNota(); pintarBack(); pintarGrafos(); pintarLista();
       return;
     }
@@ -585,7 +588,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     if (document.activeElement === editor) editor.setSelectionRange(Math.min(s, n.texto.length), Math.min(f, n.texto.length));
     pintarCab();
     if (modo === 'leer') pintarLectura();
-    ponerEstado('Actualizada desde afuera', 'afuera');
+    ponerEstado('Updated from outside', 'afuera');
   });
 
   /* ── Backlinks y grafos ──────────────────────────────────────────────── */
@@ -603,7 +606,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
           <span class="vt-diario__blnom">${esc(b.dia ? nombreDia(b.dia) : b.titulo)}</span>
           ${b.renglones.map((r) => `<span class="vt-diario__blren">${esc(r.replace(/\[\[([^\]|]+\|)?([^\]]+)\]\]/g, '$2').replace(/[*_`#>]/g, '').trim())}</span>`).join('')}
         </button>`).join('')
-      : `<p class="vt-diario__nada">Ninguna nota la nombra todavía. Escribí [[${esc(actual.titulo)}]] en otra y aparece acá.</p>`;
+      : `<p class="vt-diario__nada">No note links here yet. Write [[${esc(actual.titulo)}]] in another one and it shows up here.</p>`;
     if (pintadoBack === yo + html) return;
     pintadoBack = yo + html;
     cuentaBack.textContent = bl.length ? String(bl.length) : '';
@@ -630,7 +633,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     const renglones = sinFrontmatter(nota.texto).split('\n').map((r) => r.trim())
       .filter((r) => r && !/^#{1,6}\s/.test(r)).slice(0, 2)
       .map((r) => r.replace(/\[\[([^\]|]+\|)?([^\]]+)\]\]/g, '$2').replace(/[*_`>]/g, '').replace(/^[-+]\s+(\[[ x]\]\s+)?/i, ''));
-    const fecha = new Date(`${f}T12:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const fecha = new Date(`${f}T12:00:00`).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
     anioCuerpo.innerHTML = `<button type="button" class="vt-diario__bl" data-id="${esc(n.id)}">
       <span class="vt-diario__blnom">${esc(fecha)}</span>
       ${renglones.map((r) => `<span class="vt-diario__blren">${esc(r)}</span>`).join('')}</button>`;
@@ -669,7 +672,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     let items = busca ? todos.filter((x) => x.k.includes(busca)) : todos;
     items.sort((a, b) => Number(clave(b.t).startsWith(busca)) - Number(clave(a.t).startsWith(busca)));
     items = items.slice(0, 8);
-    if (m[1].trim() && !notas.some((n) => clave(n.titulo) === busca)) items.push({ t: m[1].trim(), nom: `Nueva: ${m[1].trim()}`, nueva: true });
+    if (m[1].trim() && !notas.some((n) => clave(n.titulo) === busca)) items.push({ t: m[1].trim(), nom: `New: ${m[1].trim()}`, nueva: true });
     if (!items.length) return cerrarSugerir();
     sug = { desde: c - m[1].length, items, i: Math.min(sug?.i ?? 0, items.length - 1) };
     pintarSugerir();
@@ -756,10 +759,10 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
 
   function menuMas(ancla) {
     Menu.show(ancla, [
-      ...(actual && !actual.dia ? [{ label: 'Cambiar el título', icon: 'edit', onSelect: renombrar }] : []),
-      { label: 'Abrir la carpeta del diario', icon: 'folder', onSelect: () => attempt(() => api.abrirCarpeta(), { errorTitle: 'No se pudo abrir la carpeta' }) },
+      ...(actual && !actual.dia ? [{ label: 'Rename', icon: 'edit', onSelect: renombrar }] : []),
+      { label: 'Open the journal folder', icon: 'folder', onSelect: () => attempt(() => api.abrirCarpeta(), { errorTitle: "Couldn't open the folder" }) },
       ...(menuExtra?.() || []),
-      ...(actual ? [{ sep: true }, { label: 'Mandar a la papelera', icon: 'trash', danger: true, onSelect: aPapelera }] : []),
+      ...(actual ? [{ sep: true }, { label: 'Move to trash', icon: 'trash', danger: true, onSelect: aPapelera }] : []),
     ], { align: 'end' });
   }
   async function renombrar() {
@@ -769,26 +772,26 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     campo.className = 'op-input';
     campo.value = actual.titulo;
     campo.spellcheck = false;
-    campo.setAttribute('aria-label', 'El título nuevo');
+    campo.setAttribute('aria-label', 'New title');
     campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); Modal.close('ok'); } });
     const cuerpo = document.createElement('div');
     cuerpo.append(campo);
-    const r = await Modal.show({ title: 'Cambiar el título', sub: 'Las notas que la nombran con [[ ]] se corrigen solas.', body: cuerpo, actions: [{ label: 'Cancelar', value: null }, { label: 'Cambiar', value: 'ok', variant: 'primary' }] });
+    const r = await Modal.show({ title: 'Rename note', sub: 'Notes that link to it with [[ ]] are updated automatically.', body: cuerpo, actions: [{ label: 'Cancel', value: null }, { label: 'Rename', value: 'ok', variant: 'primary' }] });
     const nuevo = campo.value.trim();
     if (r !== 'ok' || !nuevo || nuevo === actual?.titulo) return;
-    const res = await attempt(() => api.renombrar(actual.id, nuevo), { errorTitle: 'No se pudo cambiar el título' });
+    const res = await attempt(() => api.renombrar(actual.id, nuevo), { errorTitle: "Couldn't rename the note" });
     if (!res) return;
     await refrescar();
     await abrir(res.nota.id, { escribir: modo === 'escribir' });
-    if (res.corregidas) Toast.show({ title: 'Título cambiado', text: `Se corrigieron los enlaces de ${res.corregidas} ${res.corregidas === 1 ? 'nota' : 'notas'}.`, icon: 'check' });
+    if (res.corregidas) Toast.show({ title: 'Renamed', text: `Links were updated in ${res.corregidas} ${res.corregidas === 1 ? 'note' : 'notes'}.`, icon: 'check' });
   }
   async function aPapelera() {
     if (!actual) return;
     const yo = actual;
-    const si = await Modal.confirm({ title: 'Mandar a la papelera', sub: `«${tituloDe(yo)}» se va a .diario/papelera, adentro de la carpeta del diario. No se borra: la podés sacar de ahí.`, confirmLabel: 'Mandar', danger: true });
+    const si = await Modal.confirm({ title: 'Move to trash', sub: `“${tituloDe(yo)}” goes to .diario/papelera, inside the journal folder. It isn't deleted: you can take it back out from there.`, confirmLabel: 'Move', danger: true });
     if (!si) return;
     clearTimeout(tGuardar); sucio = false;
-    if (!(await attempt(() => api.papelera(yo.id), { errorTitle: 'No se pudo mover la nota' }))) return;
+    if (!(await attempt(() => api.papelera(yo.id), { errorTitle: "Couldn't move the note" }))) return;
     actual = null;
     await refrescar();
     pintarNota(); pintarBack(); pintarGrafos();
@@ -818,7 +821,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
 
   /* ── Arranque ────────────────────────────────────────────────────────── */
   if (!api) {
-    swap(vacio, empty({ icon: 'alert', title: 'El Diario no está disponible', text: 'Falta el puente del diario (preload.cjs).' }));
+    swap(vacio, empty({ icon: 'alert', title: 'The journal is unavailable', text: 'The journal bridge is missing (preload.cjs).' }));
     hoja.classList.add('is-vacia');
   } else {
     refrescar().then(() => {
@@ -836,7 +839,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     alEnfocar() { if (document.activeElement && raiz.contains(document.activeElement)) return; actual ? cuerpoFoco() : buscar.focus({ preventScroll: true }); },
     alAjustar() { mini.ajustar(); grande?.ajustar(); if (sug) pintarSugerir(); },
     /** Abre una nota por su título o id (o «hoy»). */
-    abrir(ref) { if (clave(ref) === 'hoy') irDia(); else irANota(ref); },
+    abrir(ref) { if (HOY.has(clave(ref))) irDia(); else irANota(ref); },
     destruir() { vivo = false; guardarYa(); soltarCambios?.(); mini.destruir(); grande?.destruir(); },
   };
 }
