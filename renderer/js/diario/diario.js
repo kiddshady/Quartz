@@ -2,9 +2,10 @@
    Quartz — el Diario de Fran
    Nació adentro de UmbroSys (1.20.0, 1/11/2026: diseño de Fran con Sam, la
    variante híbrida) y se mudó a esta app suelta el 2/11/2026. Las notas son
-   los .md de S:\Diario (src/diario.cjs): esta ventana es solo la cara, y
-   UmbroSys sigue abriendo la misma carpeta con su copia. CC las lee y
-   escribe por el servidor MCP (mcp/diario.cjs), y lo de afuera entra solo.
+   los .md de S:\Diario (src/diario.cjs): esta ventana es solo la cara. Desde
+   UmbroSys 1.101.0 (22/11/2026) UmbroSys tiene su propio diario aparte: esta
+   carpeta es solo de Quartz. CC las lee y escribe por el servidor MCP
+   (mcp/diario.cjs), y lo de afuera entra solo.
 
    Tres hojas: a la izquierda la lista por fecha (con la
    búsqueda arriba), en el medio la nota (para leer o para escribir) y a la
@@ -15,6 +16,12 @@
    nota · Ctrl+E leer o escribir · Ctrl+G el grafo · Ctrl+S guardar ya. Al
    escribir [[ aparece un menú con los títulos: Enter o Tab completa.
 
+   Seleccionar (el botón de la casilla, 0.6.0): la lista pasa a elegir. Cada
+   fila muestra su casilla en el lugar del número del día; clic elige o
+   suelta, Shift+clic elige el tramo, Ctrl+A todas las que se ven, Supr las
+   manda a la papelera y Esc sale. Arriba, la barra de búsqueda se releva por
+   la de la selección, en la misma celda.
+
    Se guarda sola. Si CC sumó algo al final mientras escribías, se juntan las
    dos cosas; si cambió otra parte, queda lo tuyo y lo de él en las versiones
    (.diario/versiones): nunca se pierde nada.
@@ -23,7 +30,7 @@
 import { esc, empty, attempt } from '../ui.js';
 import { Icons } from '../icons.js';
 import { Menu, Modal, Toast } from '../overlays.js';
-import { reconcile, swap, initScrollFades } from '../motion.js';
+import { reconcile, swap, frase, initScrollFades } from '../motion.js';
 import { md } from '../md.js';
 import { cargarPrism, resaltar } from '../resaltar.js';
 import { crearGrafo } from './grafo.js';
@@ -32,6 +39,8 @@ const api = window.opal?.diario;
 Icons.add({
   // el grafo: tres puntos unidos
   grafo: '<circle cx="4" cy="4.2" r="1.7"/><circle cx="12" cy="6" r="1.7"/><circle cx="6.4" cy="12" r="1.7"/><path d="M5.6 4.6 10.4 5.6M11.1 7.4 7.3 10.6M4.6 5.9l1.2 4.4"/>',
+  // seleccionar: una casilla con su tilde
+  elegir: '<rect x="2.5" y="2.5" width="11" height="11" rx="2.6"/><path d="M5.4 8.1 7.2 9.9 10.7 6.1"/>',
 });
 
 const clave = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -80,10 +89,19 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   raiz.classList.add('vt-diario');
   raiz.innerHTML = `
     <aside class="vt-diario__lado">
-      <div class="vt-diario__barra">
-        <div class="op-inputwrap vt-diario__buscar">${Icons.svg('search')}<input class="op-input" type="search" placeholder="Buscar o saltar" spellcheck="false" aria-label="Buscar en el diario"></div>
-        <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="hoy" aria-label="La nota de hoy" data-tip="La nota de hoy (Ctrl+D)">${Icons.svg('calendar')}</button>
-        <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="nueva" aria-label="Nota nueva" data-tip="Nota nueva (Ctrl+N)">${Icons.svg('plus')}</button>
+      <div class="vt-diario__barras">
+        <div class="vt-diario__barra vt-diario__barra--normal">
+          <div class="op-inputwrap vt-diario__buscar">${Icons.svg('search')}<input class="op-input" type="search" placeholder="Buscar o saltar" spellcheck="false" aria-label="Buscar en el diario"></div>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="elegir" aria-label="Seleccionar notas" data-tip="Seleccionar notas">${Icons.svg('elegir')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="hoy" aria-label="La nota de hoy" data-tip="La nota de hoy (Ctrl+D)">${Icons.svg('calendar')}</button>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="nueva" aria-label="Nota nueva" data-tip="Nota nueva (Ctrl+N)">${Icons.svg('plus')}</button>
+        </div>
+        <div class="vt-diario__barra vt-diario__barra--sel" inert>
+          <button type="button" class="op-iconbtn op-iconbtn--sm" data-accion="sel-salir" aria-label="Dejar de seleccionar" data-tip="Listo (Esc)">${Icons.svg('close')}</button>
+          <span class="vt-diario__selcuenta" aria-live="polite"></span>
+          <button type="button" class="op-btn op-btn--ghost op-btn--sm" data-accion="sel-todas" data-tip="Ctrl+A"><span class="vt-diario__seltodas"></span></button>
+          <button type="button" class="op-btn op-btn--danger op-btn--sm" data-accion="sel-papelera" data-tip="Supr" disabled>${Icons.svg('trash')}<span>Papelera</span></button>
+        </div>
       </div>
       <div class="vt-diario__lista op-scroll" role="listbox" aria-label="Las notas" tabindex="-1"></div>
     </aside>
@@ -138,6 +156,12 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   const modoBtn = $('.vt-diario__modo');
   const anio = $('.vt-diario__anio');
   const anioCuerpo = $('.vt-diario__aniocuerpo');
+  const lado = $('.vt-diario__lado');
+  const barraNormal = $('.vt-diario__barra--normal');
+  const barraSel = $('.vt-diario__barra--sel');
+  const selCuenta = $('.vt-diario__selcuenta');
+  const selTodas = $('.vt-diario__seltodas');
+  const selPapelera = $('[data-accion="sel-papelera"]');
 
   let notas = [];                 // las metas, de la más nueva a la más vieja
   let existen = new Set();        // claves de títulos (y fechas) que existen, para los [[ ]]
@@ -151,6 +175,9 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   let pintadoVacio = null;
   let vivo = true;
   let armada = false, ultimaTecla = 0;   // la hora de la próxima entrada (ver «La hora de cada entrada»)
+  let eligiendo = false;          // la lista está en modo seleccionar
+  const elegidas = new Set();     // los ids elegidos
+  let ancla = null;               // la última que se tocó, para Shift+clic
 
   const mini = crearGrafo($('.vt-diario__mini'), { chico: true, alElegir: (n) => elegirDelGrafo(n) });
   let grande = null;
@@ -166,7 +193,10 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     }
     if (g) grafo = g;
     if (q) await correrBusqueda();
+    // lo elegido que ya no está (se borró afuera, o recién se mandó a la papelera) se suelta
+    for (const id of elegidas) if (!notas.some((n) => n.id === id)) elegidas.delete(id);
     pintarLista();
+    pintarSel();
     pintarGrafos();
     pintarAnio();
     if (actual) pintarBack();
@@ -182,7 +212,7 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     if (resultados) {
       const exacta = resultados.some((r) => clave(r.titulo) === clave(q)) || (clave(q) === 'hoy' && existe('hoy'));
       for (const r of resultados) items.push({ key: `b:${r.id}`, html: itemHtml(r, r.fragmento) });
-      if (!exacta && q.trim()) {
+      if (!exacta && q.trim() && !eligiendo) {
         items.push({ key: 'crear', html: `<button type="button" class="vt-diario__item vt-diario__item--crear" role="option" data-crear="1">
           <span class="vt-diario__ico" aria-hidden="true">${Icons.svg('plus')}</span>
           <span class="vt-diario__txt"><span class="vt-diario__nom">Crear «${esc(q.trim())}»</span><span class="vt-diario__res">Enter</span></span></button>` });
@@ -203,10 +233,14 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     }
     reconcile(lista, items);
   }
+  /* La casilla vive siempre adentro del ícono y lo de elegir va en atributos
+     (clases y aria-selected): así reconcile() solo cambia atributos y todo lo
+     lleva la transición del CSS, sin rehacer la fila. */
   function itemHtml(n, sub) {
     const activo = actual?.id === n.id;
-    return `<button type="button" class="vt-diario__item${activo ? ' is-activo' : ''}${n.dia ? ' is-dia' : ''}" role="option" aria-selected="${activo}" data-id="${esc(n.id)}" style="--vt-edad: ${edadDe(n.dia || n.fecha).toFixed(3)}">
-      <span class="vt-diario__ico" aria-hidden="true">${n.dia ? `<b>${esc(String(Number(n.dia.slice(8))))}</b>` : Icons.svg('file')}</span>
+    const elegida = eligiendo && elegidas.has(n.id);
+    return `<button type="button" class="vt-diario__item${activo ? ' is-activo' : ''}${elegida ? ' is-elegida' : ''}${n.dia ? ' is-dia' : ''}" role="option" aria-selected="${eligiendo ? elegida : activo}" data-id="${esc(n.id)}" style="--vt-edad: ${edadDe(n.dia || n.fecha).toFixed(3)}">
+      <span class="vt-diario__ico" aria-hidden="true">${n.dia ? `<b>${esc(String(Number(n.dia.slice(8))))}</b>` : Icons.svg('file')}<span class="vt-diario__casilla">${Icons.svg('check')}</span></span>
       <span class="vt-diario__txt">
         <span class="vt-diario__fila"><span class="vt-diario__nom">${esc(n.dia ? nombreDia(n.dia, { largo: true }).replace(/^(Hoy|Ayer), /, '$1 · ') : n.titulo)}</span>${n.dia ? '' : `<span class="vt-diario__cuando">${esc(nombreDia(n.fecha, { largo: false }))}</span>`}</span>
         ${sub ? `<span class="vt-diario__res">${esc(sub)}</span>` : n.vacia ? '<span class="vt-diario__res is-vacia">vacía</span>' : ''}
@@ -217,16 +251,89 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
   lista.addEventListener('click', (e) => {
     const b = e.target.closest('.vt-diario__item');
     if (!b) return;
+    if (eligiendo) { if (b.dataset.id) tocar(b.dataset.id, e.shiftKey); return; }
     if (b.dataset.crear) crearNota(q.trim());
     else abrir(b.dataset.id);
   });
+
+  /* ── Seleccionar varias ──────────────────────────────────────────────── */
+  // las que se ven ahora en la lista, en su orden (sin las que se están yendo)
+  const visibles = () => [...lista.querySelectorAll('.vt-diario__item[data-id]')]
+    .filter((b) => !b.closest('.op-swap-out') && b.dataset.state !== 'closing')
+    .map((b) => b.dataset.id);
+  function seleccionar(on = !eligiendo) {
+    if (on === eligiendo) return;
+    eligiendo = on;
+    elegidas.clear();
+    ancla = null;
+    lado.classList.toggle('is-eligiendo', on);
+    barraNormal.inert = on;
+    barraSel.inert = !on;
+    pintarLista();
+    pintarSel();
+    if (on) (lista.querySelector('.is-activo') || lista.querySelector('.vt-diario__item[data-id]') || lista).focus({ preventScroll: true });
+    else lista.focus({ preventScroll: true });
+  }
+  function tocar(id, tramo = false) {
+    const orden = visibles();
+    if (tramo && ancla && orden.includes(ancla)) {
+      // Shift+clic: el tramo entre la última tocada y esta queda como quedó la última
+      const [a, b] = [orden.indexOf(ancla), orden.indexOf(id)].sort((x, y) => x - y);
+      const poner = elegidas.has(ancla);
+      for (const x of orden.slice(a, b + 1)) { if (poner) elegidas.add(x); else elegidas.delete(x); }
+    } else if (elegidas.has(id)) elegidas.delete(id);
+    else elegidas.add(id);
+    ancla = id;
+    pintarLista();
+    pintarSel();
+  }
+  // el botón alterna (Todas ↔ Ninguna); Ctrl+A siempre elige todas
+  function todasONinguna({ siempreTodas = false } = {}) {
+    const orden = visibles();
+    const todas = !siempreTodas && orden.length && orden.every((id) => elegidas.has(id));
+    for (const id of orden) { if (todas) elegidas.delete(id); else elegidas.add(id); }
+    pintarLista();
+    pintarSel();
+  }
+  function pintarSel() {
+    const n = elegidas.size;
+    frase(selCuenta, n ? `${n} ${n === 1 ? 'nota' : 'notas'}` : 'Elegí las notas');
+    const orden = visibles();
+    frase(selTodas, orden.length && orden.every((id) => elegidas.has(id)) ? 'Ninguna' : 'Todas');
+    selPapelera.disabled = !n;
+  }
+  async function papeleraElegidas() {
+    const ids = [...elegidas].filter((id) => notas.some((n) => n.id === id));
+    if (!ids.length) return;
+    const nombres = ids.map((id) => tituloDe(notas.find((n) => n.id === id)));
+    const lista4 = nombres.length <= 4 ? `${nombres.map((t) => `«${t}»`).join(', ').replace(/, ([^,]*)$/, ' y $1')} se ${nombres.length === 1 ? 'va' : 'van'}` : `Las ${nombres.length} se van`;
+    const si = await Modal.confirm({
+      title: ids.length === 1 ? 'Mandar a la papelera' : `Mandar ${ids.length} notas a la papelera`,
+      sub: `${lista4} a .diario/papelera, adentro de la carpeta del diario. No se ${ids.length === 1 ? 'borra: la' : 'borran: las'} podés sacar de ahí.`,
+      confirmLabel: 'Mandar', danger: true,
+    });
+    if (!si) return;
+    const abierta = actual && ids.includes(actual.id);
+    if (abierta) { clearTimeout(tGuardar); sucio = false; if (guardando) await guardando.catch(() => {}); }
+    let fallas = 0;
+    for (const id of ids) {
+      try { await api.papelera(id); } catch { fallas++; }
+    }
+    if (abierta) actual = null;
+    seleccionar(false);
+    await refrescar();
+    pintarNota(); pintarBack(); pintarGrafos();
+    const idas = ids.length - fallas;
+    if (fallas) Toast.show({ title: 'No se pudieron mover todas', text: `${idas} a la papelera, ${fallas} ${fallas === 1 ? 'quedó' : 'quedaron'} donde ${fallas === 1 ? 'estaba' : 'estaban'}.`, tone: 'error' });
+    else Toast.show({ title: idas === 1 ? 'Una nota a la papelera' : `${idas} notas a la papelera`, text: 'Están en .diario/papelera.', icon: 'check' });
+  }
   lista.addEventListener('keydown', (e) => {
     const items = [...lista.querySelectorAll('.vt-diario__item')];
     const i = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       const sig = items[Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
-      if (i <= 0 && e.key === 'ArrowUp') { buscar.focus(); return; }
+      if (i <= 0 && e.key === 'ArrowUp' && !eligiendo) { buscar.focus(); return; }
       sig?.focus({ preventScroll: false });
     }
   });
@@ -640,6 +747,10 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     else if (a === 'modo') alternarModo();
     else if (a === 'grafo') alternarGrafo();
     else if (a === 'mas') menuMas(b);
+    else if (a === 'elegir') seleccionar(true);
+    else if (a === 'sel-salir') seleccionar(false);
+    else if (a === 'sel-todas') todasONinguna();
+    else if (a === 'sel-papelera') papeleraElegidas();
   });
   titulo.addEventListener('dblclick', () => { if (actual && !actual.dia) renombrar(); });
 
@@ -683,10 +794,20 @@ export function montarDiario(raiz, { menuExtra = null } = {}) {
     pintarNota(); pintarBack(); pintarGrafos();
   }
 
+  // seleccionando: Esc sale, Supr manda lo elegido y Ctrl+A elige todas (fuera de un campo)
+  raiz.addEventListener('keydown', (e) => {
+    if (!eligiendo || e.altKey) return;
+    const enCampo = e.target.closest?.('input, textarea, [contenteditable]');
+    if (e.key === 'Escape' && !e.ctrlKey) { e.preventDefault(); e.stopPropagation(); seleccionar(false); }
+    else if (e.key === 'Delete' && !enCampo) { e.preventDefault(); papeleraElegidas(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !enCampo) { e.preventDefault(); e.stopPropagation(); todasONinguna({ siempreTodas: true }); }
+  }, true);
   raiz.addEventListener('keydown', (e) => {
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     const k = e.key.toLowerCase();
     const hecho = () => { e.preventDefault(); e.stopPropagation(); };
+    // lo que usa la barra de búsqueda (inerte mientras se elige) sale de la selección primero
+    if (eligiendo && (k === 'n' || k === 'k' || k === 'd')) seleccionar(false);
     if (k === 'n') { hecho(); nuevaConTeclado(); }
     else if (k === 'd') { hecho(); irDia(); }
     else if (k === 'k') { hecho(); limpiarBusqueda(); buscar.focus(); }
